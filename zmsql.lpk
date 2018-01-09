@@ -22,7 +22,7 @@
     <Description Value="ZMSQL database system is based on TBufDataset in-memory dataset and TJanSQL database engine.
 It is working with flat .csv files as tables and folders as databases."/>
     <License Value="Free"/>
-    <Version Minor="1" Release="20" Build="1"/>
+    <Version Minor="1" Release="21"/>
     <Files Count="31">
       <Item1>
         <Filename Value="source/AllzmsqlRegister.pas"/>
