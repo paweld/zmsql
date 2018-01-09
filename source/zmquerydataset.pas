@@ -340,6 +340,7 @@ type
 implementation
 
 uses
+  Variants,
   ZMReferentialKey;
 
 const
@@ -1801,41 +1802,48 @@ end;
 
 procedure TZMQueryDataSet.DoFilterRecord({var} out Acceptable: Boolean);
 var
-   i, vCount:Integer;
-   vField: TField;
+  i, vCount:Integer;
+  namDetail, namMaster: String;
+  DetailField, MasterField: TField;
 begin
   //inherited behavior
   inherited DoFilterRecord(Acceptable);
+
   //New behavior
   if not Acceptable then exit;
+
   //Filter detail dataset if all conditions are met.
-  if ((FBulkInsert=False)
-    and (DisableMasterDetailFiltration=False)
+  if (not FBulkInsert)
+    and (not DisableMasterDetailFiltration)
     and (Assigned(MasterFields))
     and (Assigned(MasterSource))
-    and (FMasterDetailFiltration{=True})
+    and (FMasterDetailFiltration)
     and (Active)
-    and (MasterSource.DataSet.Active)) then begin
+    and (MasterSource.DataSet.Active) then
+  begin
     vCount:=0;
     Filtered:=True; //Ensure dataset is filtered
     for i:=0 to MasterFields.Count-1 do begin
-      try
-       //If Name=Value (Detail field=Master field) pair is provided
-       If ((FieldByName(MasterFields.Names[i]).Value=MasterSource.DataSet.FieldByName(MasterFields.ValueFromIndex[i]).Value)
-            or (FieldByName(MasterFields.Names[i]).AsString=MasterSource.DataSet.FieldByName(MasterFields.ValueFromIndex[i]).AsString))
-          then Inc(vCount);
-      except
-        //If Name=Value (Detail field=Master field)  pair is not provided
-        If ((FieldByName(MasterFields[i]).Value=MasterSource.DataSet.FieldByName(MasterFields[i]).Value)
-            or (FieldByName(MasterFields[i]).AsString=MasterSource.DataSet.FieldByName(MasterFields[i]).AsString))
-          then Inc(vCount);
-      end;
+      //try
+       namDetail := MasterFields.Names[i];
+       if namDetail <> '' then begin
+         // if Name=Value (Detail field=Master field) pair is provided...
+         namMaster := MasterFields.ValueFromIndex[i];
+       end else begin
+         // if single name is provided for both detail and master field
+         namMaster := FMasterFields[i];
+         namDetail := namMaster;
+       end;
+       DetailField := FieldByName(namDetail);
+       MasterField := MasterSource.Dataset.FieldByName(namMaster);
+       if VarSameValue(Detailfield.Value, Masterfield.Value) then
+         inc(vCount);
     end;
-    if vCount=MasterFields.Count then Acceptable:=True
-      else Acceptable:=False;
+    Acceptable := (vCount=MasterFields.Count);
+
     //Refresh slave datasets
     if not ControlsDisabled then  //// edgarrod71@gmail.com
-        DoAfterScroll;
+      DoAfterScroll;
   end;
 end;
 
