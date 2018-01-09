@@ -135,6 +135,8 @@ type
 
   TSourceData=(sdSdfDataset, sdJanSQL, sdOtherDataset, sdInternal);
   TInspectFields=(ifCreateFieldsFromFieldDefs, ifCreateFieldDefsAndFields, ifDoNothing, ifNewIsEmpty, ifOther);
+  TFieldDelimiter = (fdSemicolon, fdTab, fdComma, fdBar, fdColon, fdDash, fdSlash, fdBackSlash);
+  //                     ;         #9       ,       |      :        -        /         \
 
   { TZMQueryDataSet }
 
@@ -154,6 +156,7 @@ type
     FDoReferentialUpdate:Boolean;
     FDynamicFieldsCreated: Boolean;
     FFieldCount:Integer;  //This is number of columns (fielddefs) that dataset will have after an action (after loading from a table, after loading from a dataset, after query execution....)
+    FFieldDelimiter: TFieldDelimiter;
     FFieldsLoaded: boolean;  //// edgarrod71@gmail.com
     FJanSQLInstance:TjanSQL;
     FMasterDataSetTo: TList;
@@ -293,6 +296,7 @@ type
     property MemoryDataSetOpened:Boolean read FMemoryDataSetOpened write SetMemoryDataSetOpened; //"True" executes CreateDynamicFieldsFromFieldDefs and activates dataset for editing.
     property PersistentSave:Boolean read FPersistentSave write SetPersistentSave; //If "True", insert/delete/edit will immediately be written to underlying .csv file. If "False", then dataset is only in-memory.
     property Parameters: TParams read FParameters write SetParameters; //Parameters for parameterized SQL text.
+    property FieldDelimiter: TFieldDelimiter read FFieldDelimiter write FFieldDelimiter default fdSemicolon;
     //Read-only properties for getting info about referential integrity
     property MasterRefKeysList:TList read FMasterReferentialKeys;//List of referential keys in which self is master dataset.
     property SlaveRefKeysList:TList read FSlaveReferentialKeys; //List of referential keys in which self is slave dataset.
@@ -344,8 +348,8 @@ uses
   ZMReferentialKey;
 
 const
-  C: Char = ';';
-
+  DELIMITERS: array[TFieldDelimiter] of char = (';', #9, ',', '|', ':', '-', '/', '\');
+    //fdSemicolon, fdTab, fdComma, fdBar, fdColon, fdDash, fdSlash, fdBackSlash);
 
 { TZMQueryDataSet }
 
@@ -509,7 +513,7 @@ begin
       FSdfDatasetImport.Close;
       FSdfDatasetImport.FileName:=ZMConnection.DatabasePath{Full}+ TableName + '.csv';
       FSdfDatasetImport.FirstLineAsSchema:=True;
-      FSdfDatasetImport.Delimiter := C;
+      FSdfDatasetImport.Delimiter := DELIMITERS[FFieldDelimiter];
       FSdfDatasetImport.FileMustExist:=False;
       FSdfDatasetImport.Open;
       //Let object knows data source...
@@ -549,7 +553,7 @@ begin
       Close;
       FileName:=ZMConnection.DatabasePath{Full}+TableName+'.csv';
       FirstLineAsSchema:=True;
-      FSdfDatasetImport.Delimiter:= C;
+      FSdfDatasetImport.Delimiter:= DELIMITERS[FFieldDelimiter];
       FSdfDatasetImport.FileMustExist:=False;
       Open;
       //Let object knows data source...
@@ -1292,7 +1296,7 @@ begin
      Dataset:=self;
      FileName:=ZMConnection.DatabasePath{Full}+TableName+'.csv';
      FromCurrent:=False;
-     FormatSettings.FieldDelimiter:= C;
+     FormatSettings.FieldDelimiter:= DELIMITERS[FFieldDelimiter];
      FormatSettings.HeaderRow:=True;
    //  FormatSettings.QuoteStrings:=[qsAlways];   //=== ct9999 in FPC SVN 30449 NOT Exists ====
      FormatSettings.BooleanFalse:='False';
@@ -1346,7 +1350,7 @@ begin
      {FileName:=ZMConnection.DatabasePathFull+TableName+'.txt';}
      FileName:=ZMConnection.DatabasePath{Full}+TableName+'.csv';
      FromCurrent:=False;
-     FormatSettings.FieldDelimiter:= C;
+     FormatSettings.FieldDelimiter:= DELIMITERS[FFieldDelimiter];
      FormatSettings.HeaderRow:=True;
   //   FormatSettings.QuoteStrings:=[qsAlways];  //=== ct9999 in FPC SVN 30449 NOT Exists ====
      FormatSettings.BooleanFalse:='False';
@@ -1742,6 +1746,7 @@ var
    vFieldDefNamesMatch:Boolean;
    vNewIsEmpty:Boolean;
    vFieldType: TFieldType;
+   vDelim: Char;
 begin
   //Set default values
   Result:=ifOther;
@@ -1753,16 +1758,17 @@ begin
   vNewFieldNames:='';
   vNewFieldDefNames:='';
   vFieldDefsCount := FieldDefs.Count;
+  vDelim := DELIMITERS[FFieldDelimiter];
   //Iterate through Old Dataset (assumption: There cannot be fields without fielddefs).
     //FieldDefs
     for i:=0 to pred(vFieldDefsCount) do begin
-      vOldFieldDefNames += FieldDefs[i].Name + C;
+      vOldFieldDefNames += FieldDefs[i].Name + vDelim;
       vFieldType := FieldDefs[i].DataType;
       if (vFieldType = ftAutoInc) and (FAutoIncIdx = -1) then
            FAutoIncIdx := I;   { Question (edgarrod71@gmail.com)::: how many AutoIncrement fields must syncronize with this? I suppose it must be only one! }
       //Fields
       if (Fields.Count>0) and (Fields.Count >= (i + 1)) then
-            vOldFieldNames += Fields[i].FieldName + C;
+            vOldFieldNames += Fields[i].FieldName + vDelim;
       end;
 //  end;
   //Iterate through New Dataset
@@ -1772,9 +1778,9 @@ begin
     else
     for i:=0 to pred(FFieldCount) do begin
       case FSourceData of
-        sdJanSQL:vNewFieldDefNames += FJanSQLInstance.recordsets[FRecordsetIndex].FieldNames[i]+ C;
-        sdSdfDataset:vNewFieldDefNames += FSdfDatasetImport.FieldDefs[i].Name+ C;
-        sdOtherDataset:vNewFieldDefNames += FOtherDatasetImport.FieldDefs[i].Name+ C;
+        sdJanSQL:vNewFieldDefNames += FJanSQLInstance.recordsets[FRecordsetIndex].FieldNames[i]+ vDelim;
+        sdSdfDataset:vNewFieldDefNames += FSdfDatasetImport.FieldDefs[i].Name+ vDelim;
+        sdOtherDataset:vNewFieldDefNames += FOtherDatasetImport.FieldDefs[i].Name+ vDelim;
 ////        sdInternal: vNewFieldDefNames += FieldDefs[i].Name+';';  //// Old Code, review it to eliminate
       end;
     end;
@@ -2522,9 +2528,11 @@ var
   procedure FillFieldDefs;
   var
     vFieldDef: TFieldDef;
+    vDelim: Char;
   begin
       if FieldDefs.Count > 0 then
         FieldDefs.Clear;
+      vDelim := DELIMITERS[FFieldDelimiter];
       P := @S[1];
       if P <> '' then
       repeat  /// This gets the Fields from File and updates FieldDefs...
@@ -2532,8 +2540,8 @@ var
           repeat
               fField += P^;
               inc(P);
-          until P^ in [#0, #10, #13, C];
-          if P^ = C then inc(P);
+          until P^ in [#0, #10, #13, vDelim];
+          if P^ = vDelim then inc(P);
           vFieldDef := FieldDefs.AddFieldDef;
           vFieldDef.Name := fField;
           vFieldDef.DataType:=ftString;
@@ -2622,7 +2630,7 @@ begin
               vtString: value := Values[i].vString^;
             end;
             if i <> High(Values) then
-                value += C
+                value += DELIMITERS[FFieldDelimiter]
             else
                 value += #10;
             Result := boolean(FTableFile.Write(PChar(value)^, length(value)));
