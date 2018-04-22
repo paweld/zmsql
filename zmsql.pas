@@ -1,16 +1,18 @@
-{ This file was automatically created by Typhon. Do not edit!
+{ This file was automatically created by Lazarus. Do not edit!
   This source is only used to compile and install the package.
  }
 
 unit zmsql;
 
+{$warn 5023 off : no warning about unused units}
 interface
 
 uses
-  AllzmsqlRegister, janSQL, janSQLExpression2, janSQLStrings, janSQLTokenizer, 
-  mwStringHashList, ZMBufDataset, ZMConnection, ZMQueryDataSet, 
+  AllzmsqlRegister, ZMBufDataset, ZMConnection, ZMQueryDataSet, 
   ZMReferentialKey, ZMBufDataset_parser, QBDBFrm2, QBuilder, QBDirFrm, 
-  QBAbout, QBLnkFrm, QBDBFrm, QBEZmsql, ZMQueryBuilder, LazarusPackageIntf;
+  QBAbout, QBLnkFrm, QBDBFrm, QBEZmsql, ZMQueryBuilder, janSQL, 
+  janSQLExpression2, janSQLStrings, janSQLTokenizer, mwStringHashList, 
+  LazarusPackageIntf;
 
 implementation
 
