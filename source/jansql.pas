@@ -565,7 +565,7 @@ var
   t1,t2,t3:integer;
   i,c,i3,c3:integer;
   idx:integer;
-  bAggregate:boolean;
+  bAggregate, bGroup:boolean;
   selectfieldfunctions:array of TTokenOperator;
   tablecount, outputfieldcount:integer;
   sqloutput:TjanSQLOutput;
@@ -855,7 +855,17 @@ begin
    matchtables(0);
 
   // process any group by clause
-  if bAggregate and (recordsets[t3].recordcount>1) then
+  bGroup := bAggregate;
+  if not bGroup then
+  begin
+    for i := 0 to query.FTokens.Count - 1 do
+    if query.tokens[i]._operator=tosqlGROUP then
+    begin
+      bGroup := True;
+      break;
+    end
+  end;
+  if (bAggregate or bGroup) and (recordsets[t3].recordcount>1) then
     groupby(recordsets[t3],grouplist);
 
   FMatchrecordSet:=t3;
@@ -929,7 +939,7 @@ var
   idx:integer;
   outputfieldcount:integer;
   selectfieldfunctions:array of TTokenOperator;
-  bAggregate:boolean;
+  bAggregate, bGroup:boolean;
   sqloutput:TjanSQLOutput;
 
 
@@ -1145,7 +1155,17 @@ begin
 
   FMatchrecordSet:=t3;
   // process any group by clause
-  if bAggregate and (recordsets[t3].recordcount>1) then begin
+  bGroup := bAggregate;
+  if not bGroup then
+  begin
+    for i := 0 to query.FTokens.Count - 1 do
+    if query.tokens[i]._operator=tosqlGROUP then
+    begin
+      bGroup := True;
+      break;
+    end
+  end;
+  if (bAggregate or bGroup) and (recordsets[t3].recordcount>1) then begin
     groupby(recordsets[t3],grouplist);
   end;
   c3:=recordsets[t3].recordcount;
